@@ -1,0 +1,21 @@
+{
+  "name": "chip-lcd",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lcd.js",
+  "dependencies": {
+    "chip-io": "^2.0.2",
+    "htu21d-i2c": "^0.1.0",
+    "i2c": "^0.2.3",
+    "johnny-five": "^0.10.5",
+    "node-usage": "^0.0.3",
+    "request": "^2.78.0",
+    "usage": "^0.7.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

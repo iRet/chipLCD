@@ -1,0 +1,95 @@
+- name: Install lcd script with dependencies
+  hosts: all
+  user: chip
+  gather_facts: false
+
+  pre_tasks:
+    - name: Install python2 for Ansible
+      become: yes
+      raw: bash -c "test -e /usr/bin/python || (apt -qqy update && apt install -qqy python-minimal)"
+      register: output
+      changed_when: output.stdout != ""
+
+  tasks:
+    - name: Set timezone to local
+      become: yes
+      command: timedatectl set-timezone Asia/Krasnoyarsk
+
+    - name: Update apt cache
+      become: yes
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      become: yes
+      apt: name={{ item }}
+      with_items:
+        - aptitude
+        - apt-transport-https
+        - build-essential
+
+    - name: Upgrade everything
+      become: yes
+      apt:
+        upgrade: yes
+
+    - name: Ensure Debian distro is supported
+      get_url:
+        url=https://deb.nodesource.com/node_6.x/dists/jessie/Release
+        dest=/dev/null
+      register: distrosupported
+
+    - name: Add Nodesource Keys
+      become: yes
+      apt_key:
+        url=https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+        state=present
+
+    - name: Add nodesource apt sources list deb
+      become: yes
+      apt_repository:
+        repo='deb https://deb.nodesource.com/node_6.x jessie main'
+        state=present
+      when: distrosupported|success
+
+    - name: Add nodesource apt sources list deb src
+      become: yes
+      apt_repository:
+        repo='deb-src https://deb.nodesource.com/node_6.x jessie main'
+        state=present
+      when: distrosupported|success
+
+    - name: Install nodejs
+      become: yes
+      apt: pkg=nodejs state=latest update_cache=true
+      when: distrosupported|success
+
+    - name: Make app dir
+      become: no
+      shell: mkdir -p chip_lcd
+      changed_when: False
+
+    - name: Copy sources
+      become: no
+      copy:
+        src: ../lcd/
+        dest: /home/chip/chip_lcd
+        owner: chip
+        group: chip
+
+    - name: Copy systemd script
+      become: yes
+      copy:
+        src: lcd.service
+        dest: /usr/lib/systemd/system/
+
+    - name: Install npm modules for app
+      become: no
+      shell: chdir=/home/chip/chip_lcd npm install
+
+    - name: Enable lcd service ensure it is started
+      become: yes
+      systemd:
+        name: lcd
+        enabled: yes
+        state: started
